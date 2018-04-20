@@ -8,16 +8,16 @@ Unintentional spaces and quotes have entered the dataset so these are removed.
 
 WINDOWS-1252 CP1252 8-bit character encoding, shown below as <HEX>, has been replaced with 7 bit ASCII equivalent:
 
-<80> Euro becomes Euro   
-<E9> e with accent becomes e   
-<C9> E with accent becomes E   
-<91> opening single quote becomes '   
-<92> closing single quote becomes '   
-<93> open double quote becomes '   
-<94> close double quote becomes '   
-<95> bullet point becomes .    
-<96> CP1252 hyphen small becomes -   
-<97> CP1252 hyphen large becomes -   
+`<80>` Euro becomes Euro  
+`<E9>` e with accent becomes e   
+`<C9>` E with accent becomes E   
+`<91>` opening single quote becomes '   
+`<92>` closing single quote becomes '   
+`<93>` open double quote becomes '   
+`<94>` close double quote becomes '   
+`<95>` bullet point becomes .    
+`<96>` CP1252 hyphen small becomes -   
+`<97>` CP1252 hyphen large becomes -   
     
 ASCII characters exist that we cannot use in Windows directory names \ / ? ” : |   
    
