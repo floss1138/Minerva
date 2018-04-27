@@ -16,7 +16,7 @@ my $fin = shift @ARGV || 'None';
 # @ARGV undef  || 'None' makes it never undef
 
 # root dir name
-my $root = 'minerva7';
+my $root = 'minerva9';
 
 # output file is same as $fin but _date.txt
 my $fout;
@@ -279,30 +279,32 @@ foreach (@series_titles) {
     my $chompd = $title;
     chomp $chompd;
     my $subdir = $first . '/' . $chompd;
+    
+    # define any default child directories here:
+    my @subs = ( 'Audio Stems', 'HD ProRes', 'MXF XDCAM HD', 'XML' );
 
+    # create series_subdirectory/default_children
     # print "$subdir\n";
     unless ( -d "$subdir" ) {
         mkdir "$subdir";
     }
 
-    # add Audio Stems sub dir
-    my $stems = $subdir . '/Audio Stems';
-    unless ( -d "$stems" ) {
-        mkdir "$stems";
-    }
+        foreach  (@subs) {
+        my $child = $subdir . '/' . $_;
+        # print " child dir will be $child \n";
+             unless ( -d "$child" ) {
+             mkdir "$child";
+             } 
+        }
+    # Name of temporary xml 
+    my $tempxml = 'temp.xml';
+    # Add path to name (must be an exising sub) 
+    $tempxml = "$subdir" .'/XML/' . "$tempxml";
+    # print " opening $tempxml\n";
+      open( my $XML, '>', $tempxml ) or croak "$tempxml would not open";
+      close ( $XML) or croak "$tempxml would not open";
 
-    # add Audio HD sub dir
-    my $HD = $subdir . '/HD ProRes';
-    unless ( -d "$HD" ) {
-        mkdir "$HD";
-    }
-
-    # add Audio MXF sub dir
-    my $MXF = $subdir . '/MXF XDCAM HD';
-    unless ( -d "$MXF" ) {
-        mkdir "$MXF";
-    }
-
+     
 }
 print
 "\n\n  XML SUMMARY:\n  IDcount = $IDcount\n  Series Count = $scount\n  Corrected XML delimited Chars = $xcount\n  Ouptput file = $fout\n\n";
