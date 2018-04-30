@@ -5,7 +5,7 @@ use POSIX qw(strftime);
 use File::Copy;
 use Carp;
 
-our $VERSION = '0.0.07';    # version of this script
+our $VERSION = '0.0.08';    # version of this script
 
 #  Minerva is an Athena seris api export xml file or tabbed list parser
 #  takes file name as the only argument, checks if it has tabs
@@ -16,7 +16,7 @@ my $fin = shift @ARGV || 'None';
 # @ARGV undef  || 'None' makes it never undef
 
 # root dir name
-my $root = 'minerva9';
+my $root = 'minerva14';
 
 # output file is same as $fin but _date.txt
 my $fout;
@@ -153,7 +153,7 @@ if ( $line =~ m/\t/xsm ) {
             $tcount ++;
         }
     }
-
+    # TODO make the foreach @seires_titles a sub call here and ignore the first line to create the directory structure and XML
     # remove header i.e. first line, as this would end up creating a directory
     my $header = shift @series_titles;
     print "  Header of tabbed list is: $header\n";
@@ -259,14 +259,15 @@ foreach (@series_titles) {
     # print every title line, enable for debug
     # print "$title\n";
 
-    # take first char, convert to uppper case, create dir base on this
+    # take first char, convert to uppper case, create dir path base on this
     my $first = substr $title, 0, 1;
     $first =~ tr/a-z/A-Z/;
-
-    if ( $first =~ tr/\x20-\x7f//cd ) {
+    my $firstchar = $first;
+    if ( $firstchar =~ tr/\x20-\x7f//cd ) {
         print "  Title $title begins with a strange character  \n";
         exit 0;
     }
+    # add root directory to first
     $first = $root . '/' . $first;
 
     # create first char directory
@@ -296,12 +297,55 @@ foreach (@series_titles) {
              mkdir "$child";
              } 
         }
-    # Name of temporary xml 
-    my $tempxml = 'temp.xml';
+
+# create sidecar xml needs to refer to pull the data for each title thats no longer available here
+# need to add titles to a hash or array of series only info.
+
+my $sidecar = << "XMLEND";
+<?xml version="1.0" encoding="UTF-8"?>
+<eMAM user-key="nQvUioS2Z4YjWRgdT1f5Idrk9SEDo95DhGh6A9z%2fmMKxKc9gAQYQdw%3d%3d">
+
+  <asset file-name="placehoder.temp" ingest-action="create-asset-placeholder">
+
+    <basic-metadata>
+      <title>$chompd</title>
+      <description>desciption_field</description>
+      <author>author_field</author>
+    </basic-metadata>
+
+    <custom-metadata set-standard-id="CUST_SET_AST_METADATA SET_2">
+      <field standard-id="CUST_FLD_SUPERSERIESID_1004">1320</field>
+      <field standard-id="CUST_FLD_SUPERSERIES_1005">Fortitude</field>
+      <field standard-id="CUST_FLD_SERIESID_1006">$seriesline[3]</field>q
+      <field standard-id="CUST_FLD_SERIES_1007">Fortitude - Series 1</field>
+      <field standard-id="CUST_FLD_SERIESVERSIONID_1008">1514</field>
+      <field standard-id="CUST_FLD_SERIESVERSION_1009">Fortitude</field>
+      <!-- "CUST_FLD_EPISODEID_1010" -->
+      <!-- "CUST_FLD_NAME_1011" -->
+      <!-- "CUST_FLD_EPISODENO_1012" -->
+    </custom-metadata>
+
+    <categories>
+      <category name="$firstchar/$chompd/Audio Stems"/>
+      <category name="$firstchar/$chompd/HD ProRes"/>
+      <category name="$firstchar/$chompd/MXF XDCAM HD"/>
+    </categories>
+
+  </asset>
+
+</eMAM>
+XMLEND
+
+    # translate to Windows new lines 
+    $sidecar =~ s/\n/\r\n/gxsm;
+
+    # Name of temporary xml is the chomped sub dir with a .xml extension 
+    my $tempxml = $chompd . '.xml';
     # Add path to name (must be an exising sub) 
     $tempxml = "$subdir" .'/XML/' . "$tempxml";
     # print " opening $tempxml\n";
       open( my $XML, '>', $tempxml ) or croak "$tempxml would not open";
+      print $XML "$sidecar";
       close ( $XML) or croak "$tempxml would not open";
 
      
