@@ -5,7 +5,7 @@ use POSIX qw(strftime);
 use File::Copy;
 use Carp;
 
-our $VERSION = '0.0.08';    # version of this script
+our $VERSION = '0.0.09';    # version of this script
 
 #  Minerva is an Athena seris api export xml file or tabbed list parser
 #  takes file name as the only argument, checks if it has tabs
@@ -151,6 +151,17 @@ if ( $line =~ m/\t/xsm ) {
            # print " $select2\n";
             push @series_titles, $select2;
             $tcount ++;
+               # if title count > 1, ignores the first line which is the header and create series title with data array
+               if ( $tcount > 1 ) {
+               my @series_title_series_line;
+               push ( @series_title_series_line ,$select2);
+               push ( @series_title_series_line, @seriesline );
+               # call mkdirs_with_xml sub here
+               # print " serise title and all data: @series_title_series_line \n\n"; exit 0;
+                mkdirs_with_xml(@series_title_series_line);
+               # clear content of array
+               undef(@series_title_series_line);
+               }
         }
     }
     # TODO make the foreach @seires_titles a sub call here and ignore the first line to create the directory structure and XML
@@ -350,9 +361,24 @@ XMLEND
 
      
 }
+# End of directory creation routine
+
 print
 "\n\n  XML SUMMARY:\n  IDcount = $IDcount\n  Series Count = $scount\n  Corrected XML delimited Chars = $xcount\n  Ouptput file = $fout\n\n";
+
+## sub to take array of title, data, data, data, data, etc ..
+# create dir from title and populate sidcare xml with data
+sub mkdirs_with_xml {
+my @title_data = @_;
+# print " each series with data: @title_data\n";
+
+}
+# end of mkdirs sub
+
+
 exit 0;
+
+
 
 __END__
 
