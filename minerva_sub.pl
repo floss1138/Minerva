@@ -4,8 +4,9 @@ use warnings;
 use POSIX qw(strftime);
 use File::Copy;
 use Carp;
+use File::Basename;
 
-our $VERSION = '0.0.11';    # version of this script
+our $VERSION = '0.0.12';    # version of this script
 
 #  Minerva is an Athena seris api export xml file or tabbed list parser
 #  takes file name as the only argument, checks if it has tabs
@@ -17,6 +18,7 @@ my $fin = shift @ARGV || 'None';
 
 # root dir name
 my $root = 'minerva17';
+my $xmls = 'xmls';
 
 # output file is same as $fin but _date.txt
 my $fout;
@@ -76,6 +78,11 @@ else { print "  Athena requires a .txt file ...\n"; }
 unless ( -d "$root" ) {
     mkdir "$root";
 }
+# and directory for xml files only
+unless ( -d "$xmls" ) {
+    mkdir "$xmls";
+}
+
 
 # create output file name from $fin
 $fout = $fin;
@@ -379,6 +386,11 @@ XMLEND
     open( my $XML, '>', $tempxml ) or croak "$tempxml would not open";
     print $XML "$sidecar";
     close($XML) or croak "$tempxml would not open";
+    # create a copy of the xmls in the $xmls directory
+    my $xml_copy = basename ($tempxml);
+    $xml_copy = "$xmls" . '/' . "$xml_copy";
+    # print " copying $tempxml to $xml_copy\n"; 
+    copy ("$tempxml", "$xml_copy") or  die "copy of xml failed";
 
 }
 
