@@ -4,8 +4,9 @@ use warnings;
 use POSIX qw(strftime);
 use File::Copy;
 use Carp;
+use File::Basename;
 
-our $VERSION = '0.0.09';    # version of this script
+our $VERSION = '0.0.14';    # version of this script
 
 #  Minerva is an Athena seris api export xml file or tabbed list parser
 #  takes file name as the only argument, checks if it has tabs
@@ -15,8 +16,11 @@ my $fin = shift @ARGV || 'None';
 
 # @ARGV undef  || 'None' makes it never undef
 
-# root dir name
-my $root = 'minerva14';
+# root dir name for directory creation
+my $root = 'minerva18';
+
+# XMLs only dir name
+my $xmls = 'xmls';
 
 # output file is same as $fin but _date.txt
 my $fout;
@@ -27,7 +31,7 @@ my $series;
 my $IDcount = 0;
 my $scount  = 0;
 my $xcount  = 0;
-my $tcount = 0; # Text title count for tabbed lists
+my $tcount  = 0;    # Text title count for tabbed lists
 
 # array to hold series titles
 my @series_titles;
@@ -71,6 +75,16 @@ if ( $fin =~ /.txt$/xsm ) {
     }
 }
 else { print "  Athena requires a .txt file ...\n"; }
+
+# create a root directory to hold a directory structure
+unless ( -d "$root" ) {
+    mkdir "$root";
+}
+
+# and directory for xml files only
+unless ( -d "$xmls" ) {
+    mkdir "$xmls";
+}
 
 # create output file name from $fin
 $fout = $fin;
@@ -126,6 +140,7 @@ if ( $line =~ m/\t/xsm ) {
             print " @seriesline\n is in error\n";
             exit 0;
         }
+
         # Some debug:
         # print "  Line cell count = $cells\n";
         # print all lines
@@ -147,25 +162,31 @@ if ( $line =~ m/\t/xsm ) {
             $select2 = "$seriesline[4] -$seriesline[3]";
 
             # select2 is only created if previous selection is not the same
-           # Print all deduplicated lines
-           # print " $select2\n";
+            # Print all deduplicated lines
+            # print " $select2\n";
             push @series_titles, $select2;
-            $tcount ++;
-               # if title count > 1, ignores the first line which is the header and create series title with data array
-               if ( $tcount > 1 ) {
-               my @series_title_series_line;
-               push ( @series_title_series_line ,$select2);
-               push ( @series_title_series_line, @seriesline );
-               # call mkdirs_with_xml sub here
-               # print " serise title and all data: @series_title_series_line \n\n"; exit 0;
+            $tcount++;
+
+# if title count > 1, ignores the first line which is the header and create series title with data array
+            if ( $tcount > 1 ) {
+                my @series_title_series_line;
+                push( @series_title_series_line, $select2 );
+                push( @series_title_series_line, @seriesline );
+
+   # call mkdirs_with_xml sub here
+   # print " series title and all data: @series_title_series_line \n\n"; exit 0;
+   # write to OFILE for debug
+                print $OFILE "@series_title_series_line\n";
                 mkdirs_with_xml(@series_title_series_line);
-               # clear content of array
-               undef(@series_title_series_line);
-               }
+
+                # clear content of array
+                undef(@series_title_series_line);
+            }
         }
     }
-    # TODO make the foreach @seires_titles a sub call here and ignore the first line to create the directory structure and XML
-    # remove header i.e. first line, as this would end up creating a directory
+
+# CREATE DIRECTORY STRUCTURE - ignore the first line to create the directory structure and XML
+# remove header i.e. first line, as this would end up creating a directory
     my $header = shift @series_titles;
     print "  Header of tabbed list is: $header\n";
 
@@ -218,14 +239,19 @@ close $AFILE or carp "  could not close $fin";
 close $OFILE or carp "  could not close $fin";
 
 # create a root directory to hold a directory structure
-unless ( -d "$root" ) {
-    mkdir "$root";
-}
+# unless ( -d "$root" ) {
+#    mkdir "$root";
+# }
 
-foreach (@series_titles) {
-    my $title = $_;
+## sub to take array of title, data, data, data, data, etc ..
+# create dir from title and populate sidcare xml with data
+sub mkdirs_with_xml {
+    my @title_data = @_;
 
-    # print "$_";
+    #foreach (@series_titles) {
+    my $title = $title_data[0];
+
+    # print " Series Title is: $_\n root dir is $root\n";
     # translate non windows dir chars
     $title =~ tr/:/-/;
     $title =~ tr/\\/-/;
@@ -263,8 +289,8 @@ foreach (@series_titles) {
     $title =~ s/[\x91\x92\x93\x94]//g;
     $title =~ s/[\x95]/\./g;
     $title =~ s/[\x96\x97]/-/g;
-    $title =~ s/[\x80]/Euro /g;    
-    $title =~ s/[\xC9]/E/g; # E with ascending accent
+    $title =~ s/[\x80]/Euro /g;
+    $title =~ s/[\xC9]/E/g;    # E with ascending accent
     $title =~ s/[\xE9]/e/g;
 
     # print every title line, enable for debug
@@ -278,6 +304,7 @@ foreach (@series_titles) {
         print "  Title $title begins with a strange character  \n";
         exit 0;
     }
+
     # add root directory to first
     $first = $root . '/' . $first;
 
@@ -291,7 +318,7 @@ foreach (@series_titles) {
     my $chompd = $title;
     chomp $chompd;
     my $subdir = $first . '/' . $chompd;
-    
+
     # define any default child directories here:
     my @subs = ( 'Audio Stems', 'HD ProRes', 'MXF XDCAM HD', 'XML' );
 
@@ -301,18 +328,19 @@ foreach (@series_titles) {
         mkdir "$subdir";
     }
 
-        foreach  (@subs) {
+    foreach (@subs) {
         my $child = $subdir . '/' . $_;
+
         # print " child dir will be $child \n";
-             unless ( -d "$child" ) {
-             mkdir "$child";
-             } 
+        unless ( -d "$child" ) {
+            mkdir "$child";
         }
+    }
 
 # create sidecar xml needs to refer to pull the data for each title thats no longer available here
 # need to add titles to a hash or array of series only info.
 
-my $sidecar = << "XMLEND";
+    my $sidecar = << "XMLEND";
 <?xml version="1.0" encoding="UTF-8"?>
 <eMAM user-key="nQvUioS2Z4YjWRgdT1f5Idrk9SEDo95DhGh6A9z%2fmMKxKc9gAQYQdw%3d%3d">
 
@@ -325,12 +353,12 @@ my $sidecar = << "XMLEND";
     </basic-metadata>
 
     <custom-metadata set-standard-id="CUST_SET_AST_METADATA SET_2">
-      <field standard-id="CUST_FLD_SUPERSERIESID_1004">1320</field>
-      <field standard-id="CUST_FLD_SUPERSERIES_1005">Fortitude</field>
-      <field standard-id="CUST_FLD_SERIESID_1006">$seriesline[3]</field>q
-      <field standard-id="CUST_FLD_SERIES_1007">Fortitude - Series 1</field>
-      <field standard-id="CUST_FLD_SERIESVERSIONID_1008">1514</field>
-      <field standard-id="CUST_FLD_SERIESVERSION_1009">Fortitude</field>
+      <field standard-id="CUST_FLD_SUPERSERIESID_1004">$title_data[1]</field>
+      <field standard-id="CUST_FLD_SUPERSERIES_1005">$title_data[2]</field>
+      <field standard-id="CUST_FLD_SERIESID_1006">$title_data[3]</field>
+      <field standard-id="CUST_FLD_SERIES_1007">$title_data[5]</field>
+      <field standard-id="CUST_FLD_SERIESVERSIONID_1008">$title_data[4]</field>
+      <field standard-id="CUST_FLD_SERIESVERSION_1009">$title_data[5]</field>
       <!-- "CUST_FLD_EPISODEID_1010" -->
       <!-- "CUST_FLD_NAME_1011" -->
       <!-- "CUST_FLD_EPISODENO_1012" -->
@@ -347,20 +375,29 @@ my $sidecar = << "XMLEND";
 </eMAM>
 XMLEND
 
-    # translate to Windows new lines 
+    # translate to Windows new lines
     $sidecar =~ s/\n/\r\n/gxsm;
 
-    # Name of temporary xml is the chomped sub dir with a .xml extension 
+    # Name of temporary xml is the chomped sub dir with a .xml extension
     my $tempxml = $chompd . '.xml';
-    # Add path to name (must be an exising sub) 
-    $tempxml = "$subdir" .'/XML/' . "$tempxml";
-    # print " opening $tempxml\n";
-      open( my $XML, '>', $tempxml ) or croak "$tempxml would not open";
-      print $XML "$sidecar";
-      close ( $XML) or croak "$tempxml would not open";
 
-     
+    # Add path to name (must be an exising sub)
+    $tempxml = "$subdir" . '/XML/' . "$tempxml";
+
+    # print " opening $tempxml\n";
+    open( my $XML, '>', $tempxml ) or croak "$tempxml would not open";
+    print $XML "$sidecar";
+    close($XML) or croak "$tempxml would not open";
+
+    # create a copy of the xmls in the $xmls directory
+    my $xml_copy = basename($tempxml);
+    $xml_copy = "$xmls" . '/' . "$xml_copy";
+
+    # print " copying $tempxml to $xml_copy\n";
+    copy( "$tempxml", "$xml_copy" ) or die "copy of xml failed";
+
 }
+
 # End of directory creation routine
 
 print
@@ -368,17 +405,16 @@ print
 
 ## sub to take array of title, data, data, data, data, etc ..
 # create dir from title and populate sidcare xml with data
-sub mkdirs_with_xml {
-my @title_data = @_;
+# sub mkdirs_with_xml {
+#    my @title_data = @_;
+
 # print " each series with data: @title_data\n";
 
-}
+#}
+
 # end of mkdirs sub
 
-
 exit 0;
-
-
 
 __END__
 
